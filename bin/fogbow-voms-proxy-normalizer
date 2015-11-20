@@ -1,21 +1,27 @@
 #!/bin/bash
 IFS=' ' read -r -a array <<< "$@"
 FOUND=false
+CREATE_PROXY=true
 PROXY_PATH="/tmp/x509up_u$UID"
 for option in "${array[@]}"
 do
-    if [ "$option" =  "--out" ] ; then
+    if [[ "$option" =  "--out" || "$option" = "--file" ]] ; then
         FOUND=true
-    else
-        if $FOUND; then
-            PROXY_PATH=$option
-            FOUND=false
-        fi
+        continue
+    fi
+    if [[ "$option" = "--normalize" ]] ; then
+        CREATE_PROXY=false
+    fi
+    if $FOUND; then
+        PROXY_PATH=$option
+        FOUND=false
     fi
 done
 
-voms-proxy-init-helper $@
-if [ -f $PROXY_PATH ]; then
+if $CREATE_PROXY; then
+    voms-proxy-init-helper $@
+fi
+if [[ -f $PROXY_PATH ]]; then
     echo "Normalizing proxy at $PROXY_PATH"
     cat "$PROXY_PATH" | tr -d '\n' > "$PROXY_PATH.nml"
     echo "The normalized proxy file was saved to $PROXY_PATH.nml"
